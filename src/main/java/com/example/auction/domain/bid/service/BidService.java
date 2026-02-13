@@ -7,6 +7,7 @@ import com.example.auction.domain.bid.entity.Bid;
 import com.example.auction.domain.bid.repository.AutoBidRepository;
 import com.example.auction.domain.bid.repository.BidRepository;
 import com.example.auction.domain.product.entity.Product;
+import com.example.auction.domain.product.repository.AuctionBanRepository;
 import com.example.auction.domain.product.repository.ProductRepository;
 import com.example.auction.domain.user.entity.User;
 import com.example.auction.domain.user.repository.UserRepository;
@@ -15,6 +16,8 @@ import com.example.auction.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -26,18 +29,28 @@ public class BidService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final AutoBidRepository autoBidRepository;
-
+    private final AuctionBanRepository auctionBanRepository;
 
     @Transactional
     public void bid(BidRequest request) {
-        Product product = productRepository.findById(request.productId())
+        Product product = productRepository.findByIdWithLock(request.productId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        validateAuctionTime(product);
+
         User bidder = userRepository.findById(request.bidderId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+
+        if (auctionBanRepository.existsByProductAndUser(product, bidder)) {
+            throw new CustomException(ErrorCode.BANNED_USER);
+        }
 
         if (product.getCurrentPrice() >= request.bidPrice()) {
             throw new CustomException(ErrorCode.INVALID_BID_PRICE);
         }
+
+        try { Thread.sleep(50); } catch (InterruptedException e) {}
         saveBid(product, bidder, request.bidPrice());
 
         processAutoBid(product);
@@ -47,9 +60,12 @@ public class BidService {
     public void registerAutoBid(AutoBidRequest request) {
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        Product product = productRepository.findById(request.productId())
+
+
+        Product product = productRepository.findByIdWithLock(request.productId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
+        validateAuctionTime(product);
 
         autoBidRepository.save(AutoBid.builder()
                 .user(user)
@@ -110,12 +126,21 @@ public class BidService {
     private void saveBid(Product product, User winner, long price) {
 
         product.updateCurrentPrice(price);
+        product.increaseBidCount();
 
         bidRepository.save(Bid.builder()
                 .product(product)
                 .bidder(winner)
                 .bidPrice(price)
                 .build());
+    }
+    private void validateAuctionTime(Product product) {
+        LocalDateTime now = LocalDateTime.now();
+
+
+        if (product.getEndAt().isBefore(now)) {
+            throw new CustomException(ErrorCode.AUCTION_ENDED);
+        }
     }
 
 

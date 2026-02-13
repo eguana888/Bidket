@@ -2,9 +2,11 @@ package com.example.auction.domain.product.controller;
 
 
 import com.example.auction.domain.product.dto.ProductCreateRequest;
+import com.example.auction.domain.product.dto.ProductDetailResponse;
 import com.example.auction.domain.product.dto.ProductResponse;
 import com.example.auction.domain.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,4 +40,15 @@ public class ProductController {
         List<ProductResponse> responses = productService.searchProducts(keyword);
         return ResponseEntity.ok(responses);
     }
+
+    @GetMapping("/getProducts")
+    public ResponseEntity<Slice<ProductDetailResponse>> getProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "latest") String sort
+    ) {
+        return ResponseEntity.ok(productService.getProductList(page, size, sort));
+    }
+
+
 }

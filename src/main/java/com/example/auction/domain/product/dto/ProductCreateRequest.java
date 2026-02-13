@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -29,8 +30,7 @@ public record ProductCreateRequest(
                 .title(this.title)
                 .startPrice(this.startPrice)
                 .minBidIncrement(this.minBidIncrement)
-                .endAt(java.sql.Timestamp.valueOf(this.endAt))
-                .createdAt(new Date())
+                .endAt(this.endAt)
                 .build();
     }
 }

@@ -4,7 +4,9 @@ import com.example.auction.domain.user.entity.User;
 import com.example.auction.domain.bid.entity.Bidstatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -31,18 +33,31 @@ public class Product {
 
     private Long minBidIncrement;
 
+    @Column(nullable = false)
+    private int bidCount = 0;
+
     @Enumerated(EnumType.STRING)
     private Bidstatus status;
 
-    private Date endAt;
+    private LocalDateTime endAt;
 
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
-    private Date updatedAt;
+    private LocalDateTime updatedAt;
 
     public void updateCurrentPrice(Long price) {
         this.currentPrice = price;
     }
+    public void changeStatus(Bidstatus bidstatus){
+        status = bidstatus;
+    }
 
+    public void increaseBidCount() {
+        this.bidCount++;
+    }
+
+    public int getBidCount() {
+        return bidCount;
+    }
 }
 

@@ -37,3 +37,10 @@ out/
 .vscode/
 
 application-secret.properties
+
+### Docker ###
+Dockerfile*
+docker-compose*.yml
+.docker/
+prometheus.yml
+docker-data/

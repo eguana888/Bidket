@@ -1,6 +1,8 @@
 package com.example.auction.domain.product.service;
 
+import com.example.auction.domain.bid.entity.Bidstatus;
 import com.example.auction.domain.product.dto.ProductCreateRequest;
+import com.example.auction.domain.product.dto.ProductDetailResponse;
 import com.example.auction.domain.product.dto.ProductResponse;
 import com.example.auction.domain.product.entity.Product;
 import com.example.auction.domain.product.repository.ProductRepository;
@@ -10,6 +12,9 @@ import com.example.auction.global.exception.CustomException;
 import com.example.auction.global.exception.ErrorCode;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,6 +44,7 @@ public class ProductService {
     }
 
 
+    //상세페이지
     public ProductResponse getProduct(Long productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -46,6 +52,26 @@ public class ProductService {
         return ProductResponse.from(product);
 
     }
+
+    public Slice<ProductDetailResponse> getProductList(int page, int size, String sortParam) {
+
+        Sort sort = switch (sortParam) {
+            case "popular" -> Sort.by("bidCount").descending();
+            case "minPrice" -> Sort.by("currentPrice").ascending();
+            case "maxPrice" -> Sort.by("currentPrice").descending();
+            case "closing" -> Sort.by("endAt").ascending();
+            default -> Sort.by("createdAt").descending();
+        };
+
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
+
+
+        Slice<Product> products = productRepository.findAllByStatus(Bidstatus.ING, pageRequest);
+
+        return products.map(ProductDetailResponse::from);
+    }
+
+
 
     //풀스캔 문제..
     public List<ProductResponse> searchProducts(String title) {
